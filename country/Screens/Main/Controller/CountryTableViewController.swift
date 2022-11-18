@@ -11,6 +11,7 @@ import CoreData
 
 class CountryTableViewController: UITableViewController, UITabBarDelegate, UITabBarControllerDelegate {
 
+    var offset = 0
     var respModel = [Data]()
     var selectedCode: String?
     var savedName = [String]() {
@@ -47,6 +48,9 @@ class CountryTableViewController: UITableViewController, UITabBarDelegate, UITab
 
     override func viewDidLoad() {
         super.viewDidLoad()
+      
+      title = "Countries"
+        
 
         getModel()
         fetch()
@@ -179,7 +183,7 @@ class CountryTableViewController: UITableViewController, UITabBarDelegate, UITab
     // MARK: - Alamofire Functions
 
     private func getModel() {
-        let request = AF.request("https://wft-geo-db.p.rapidapi.com/v1/geo/countries/?rapidapi-key=31edfab498msh1708eb1cc2064cbp1aece4jsnc27c88b535f1").validate(statusCode: 200..<300)
+        let request = AF.request("https://wft-geo-db.p.rapidapi.com/v1/geo/countries/?rapidapi-key=31edfab498msh1708eb1cc2064cbp1aece4jsnc27c88b535f1&limit=10&offset=\(offset)").validate(statusCode: 200..<300)
 
         request.responseDecodable(of: CountryModel.self) { (response) in
             switch response.result {
@@ -188,8 +192,15 @@ class CountryTableViewController: UITableViewController, UITabBarDelegate, UITab
                 print("Fetch Successful")
 
                 guard let countries = response.value else { return }
+                
+                if self.respModel != nil {
+                    self.respModel.append(contentsOf: countries.data ?? [])
+                } else {
+                
+                    self.respModel = countries.data ?? []
+                }
 
-                self.respModel = countries.data ?? []
+               
                 self.tableView.reloadData()
 
             case let .failure(error):
@@ -291,5 +302,14 @@ extension CountryTableViewController {
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         return " "
+    }
+    
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath){
+        
+        if indexPath.row >= (self.respModel.count ) - 5 {
+            offset = offset + 1
+            getModel()
+        }
+    
     }
 }

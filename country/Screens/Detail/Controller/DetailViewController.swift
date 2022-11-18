@@ -11,6 +11,7 @@ import Kingfisher
 import WebKit
 import CoreData
 import SafariServices
+import SVGKit
 
 class DetailViewController: UIViewController {
 
@@ -18,16 +19,16 @@ class DetailViewController: UIViewController {
     var respModel: DataClass?
     var savedCode = [String]()
     var savedName = [String]()
+    
 
     @IBOutlet var detailView: UIView!
 
+    @IBOutlet weak var backView: UIView!
     @IBOutlet weak var countryCodeLabel: UILabel!
     @IBOutlet weak var detailImageView: UIImageView!
 
     @IBOutlet weak var flagImageView: UIImageView!
     @IBOutlet weak var informationButton: UIButton!
-
-    @IBOutlet weak var saveButton: UIButton!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -37,14 +38,34 @@ class DetailViewController: UIViewController {
         fetch()
         title = respModel?.name
         countryCodeLabel.text = respModel?.code
-
-        saveButton.setTitle("", for: .normal)
-        informationButton.layer.cornerRadius = 2
+        
+        let favButton = UIBarButtonItem(image: UIImage(systemName: "star.fill"), style: .plain, target: self, action: #selector(saveButtonTapped(_ :)))
+        favButton.tintColor = UIColor.darkGray
+        navigationItem.rightBarButtonItems = [favButton]
+        
+        
+        DispatchQueue.global().async { [weak self] in
+            guard let flagUrl = self?.respModel?.flagImageURI else { return }
+            let flag: SVGKImage = SVGKImage(contentsOf: URL(string: flagUrl))
+            
+                      
+                            DispatchQueue.main.async {
+                                self?.detailImageView.image = flag.uiImage
+                                self?.detailImageView.contentMode = .scaleAspectFill
+                            }
+                        
+                    }
+                
+        
+        
+       
+        
+      informationButton.layer.cornerRadius = 2
 
         for val in self.savedCode where val == respModel?.code {
-            saveButton.tintColor = UIColor.black
+            favButton.tintColor = UIColor.black
         }
-
+       
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -198,23 +219,34 @@ class DetailViewController: UIViewController {
             present(vc, animated: true)
         }
     }
-
-    @IBAction func saveButtonTapped(_ sender: Any) {
+    
+    @objc private func saveButtonTapped(_ sender: UIBarButtonItem){
         print("tapped")
 
         var name  = respModel?.name
         var code = respModel?.code
-
-         if  saveButton.tintColor == UIColor.darkGray {
-             saveButton.tintColor = UIColor.black
-             saveCountries(name: name ?? "", code: code ?? "")
-             print("saved")
-         } else {
-             saveButton.tintColor = UIColor.darkGray
-             self.delete(code: code ?? "")
-             print("deleted")
-         }
-
+        if(self.savedCode.isEmpty){
+            sender.tintColor = .black
+            saveCountries(name: name ?? "", code: code ?? "")
+            print("saved")
+        }else{
+            for val in self.savedCode{
+                
+                if(val != respModel?.code){
+                    sender.tintColor = .black
+                    saveCountries(name: name ?? "", code: code ?? "")
+                    print("saved")
+                
+                }else{
+                    sender.tintColor = .darkGray
+                    self.delete(code: code ?? "")
+                    print("deleted")
+                   
+                }
+                
+            }
+        }
+     
     }
 
     @IBAction func informationButtonTapped(_ sender: Any) {
